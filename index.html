@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz : Optimiser Sa Candidature SSI Conforme</title>
+    <!-- Librairie jsPDF Standalone (Méthode robuste de génération) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <style>
+        /* --- RESET & VARIABLES --- */
+        :root {
+            --primary-color: #34495e; /* Gris Ardoise (Conformité/Rigueur) */
+            --secondary-color: #2c3e50;
+            --accent-color: #2980b9; /* Bleu Sécurité */
+            --text-color: #ecf0f1;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --success-color: #27ae60;
+            --error-color: #c0392b;
+            --warning-color: #f39c12;
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--font-main);
+            background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* --- LAYOUT --- */
+        .app-container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 800px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+
+        header {
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 4px solid var(--accent-color);
+        }
+
+        header h1 { font-size: 1.4rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        header p { font-size: 0.9rem; opacity: 0.8; }
+
+        main { flex: 1; padding: 30px; display: flex; flex-direction: column; justify-content: center; }
+
+        /* --- SCREENS --- */
+        .screen { display: none; animation: fadeIn 0.4s ease-out; width: 100%; }
+        .screen.active { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- INTRO --- */
+        .intro-text { text-align: center; line-height: 1.6; color: #555; }
+        .input-group { width: 100%; max-width: 400px; text-align: left; margin-bottom: 20px; }
+        .input-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--primary-color); }
+        .input-group input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; }
+        .input-group input:focus { border-color: var(--primary-color); outline: none; }
+
+        /* --- QUIZ --- */
+        .progress-bar-container { width: 100%; height: 8px; background-color: #eee; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+        .progress-bar { height: 100%; background-color: var(--accent-color); width: 0%; transition: width 0.3s ease; }
+        .question-counter { align-self: flex-start; font-size: 0.9rem; color: var(--primary-color); font-weight: bold; margin-bottom: 10px; }
+        .question-text { font-size: 1.2rem; font-weight: 600; margin-bottom: 25px; text-align: left; width: 100%; line-height: 1.4; }
+
+        .options-grid { display: grid; grid-template-columns: 1fr; gap: 15px; width: 100%; }
+        .option-btn { background-color: #fff; border: 2px solid #e0e0e0; border-radius: 8px; padding: 15px 20px; text-align: left; cursor: pointer; font-size: 1rem; transition: all 0.2s; display: flex; align-items: flex-start; }
+        .option-btn:hover:not(:disabled) { border-color: var(--primary-color); background-color: #f0f7ff; transform: translateX(5px); }
+        .option-btn:disabled { cursor: default; opacity: 0.7; }
+        .option-label { font-weight: bold; margin-right: 10px; color: var(--primary-color); min-width: 25px; }
+        .option-btn.correct { border-color: var(--success-color); background-color: #d4edda; color: #155724; }
+        .option-btn.wrong { border-color: var(--error-color); background-color: #f8d7da; color: #721c24; }
+
+        .explanation-box { background-color: #e9ecef; padding: 15px; border-radius: 6px; margin-top: 20px; width: 100%; border-left: 4px solid var(--accent-color); display: none; animation: fadeIn 0.3s; }
+        .explanation-title { font-weight: bold; margin-bottom: 5px; color: var(--secondary-color); }
+
+        /* --- BOUTONS --- */
+        .btn { padding: 12px 24px; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s, transform 0.1s; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-primary { background-color: var(--primary-color); color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .btn-primary:hover { background-color: #2c3e50; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        /* --- RESULTATS --- */
+        .score-display { font-size: 3rem; font-weight: 800; color: var(--primary-color); margin: 10px 0; }
+        .score-message { font-size: 1.2rem; margin-bottom: 30px; text-align: center; }
+        
+        .download-area { background-color: #fff3cd; border: 2px dashed var(--warning-color); padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px; width: 100%; }
+        .download-title { color: #856404; font-weight: bold; margin-bottom: 10px; display: block; }
+        .btn-download { background-color: #c0392b; color: white; font-size: 1.1rem; padding: 15px 30px; width: 100%; justify-content: center; box-shadow: 0 4px 10px rgba(192, 57, 43, 0.4); animation: pulse 2s infinite; }
+        .btn-download:hover { background-color: #a93226; }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(192, 57, 43, 0); } 100% { box-shadow: 0 0 0 0 rgba(192, 57, 43, 0); } }
+
+        /* --- TOAST --- */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: #333; color: white; padding: 12px 24px; border-radius: 30px; opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 2000; font-size: 0.9rem; }
+        .toast.show { opacity: 1; }
+
+        @media (max-width: 600px) { header h1 { font-size: 1.2rem; } .question-text { font-size: 1.1rem; } .option-btn { padding: 12px; font-size: 0.95rem; } main { padding: 20px; } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1>Quiz : Optimiser Sa Candidature SSI</h1>
+        <p>Techniques de CV Normé, Rigueur et Preuves de Compétences</p>
+    </header>
+
+    <main>
+        <section id="screen-intro" class="screen active">
+            <div class="intro-text">
+                <h3>Bienvenue</h3>
+                <p>Ce quiz évalue votre maîtrise des techniques de rédaction d'un CV conforme, de la rigueur des e-mails professionnels et de la valorisation de vos preuves techniques en SSI.</p>
+                <br>
+                <p>Veuillez entrer votre nom et prénom pour commencer.</p>
+            </div>
+            <div class="input-group">
+                <label for="username">Nom & Prénom :</label>
+                <input type="text" id="username" placeholder="Ex: Jean Dupont" autocomplete="off">
+            </div>
+            <button class="btn btn-primary" id="btn-start">Commencer le Quiz</button>
+        </section>
+
+        <section id="screen-quiz" class="screen">
+            <div class="progress-bar-container"><div class="progress-bar" id="progress-bar"></div></div>
+            <div class="question-counter">Question <span id="current-q-num">1</span> / <span id="total-q-num">10</span></div>
+            <div class="question-text" id="question-text"></div>
+            <div class="options-grid" id="options-container"></div>
+            <div class="explanation-box" id="explanation-box">
+                <div class="explanation-title">Règle de Conformité :</div>
+                <div id="explanation-text"></div>
+            </div>
+            <button class="btn btn-primary" id="btn-next" style="margin-top: 20px; display: none;">Question Suivante</button>
+        </section>
+
+        <section id="screen-result" class="screen">
+            <h2>Résultat Final</h2>
+            <div class="score-display"><span id="final-score">0</span>/10</div>
+            <p class="score-message" id="score-message"></p>
+            <div class="download-area">
+                <span class="download-title">⚠ ÉLÉMENT DE PREUVE OBLIGATOIRE</span>
+                <p style="margin-bottom: 15px; font-size: 0.9rem; color: #555;">Ce document PDF atteste de la réalisation du quiz sur l'optimisation de candidature SSI. Veuillez le télécharger et le conserver.</p>
+                <button class="btn btn-download" id="btn-download">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    TÉLÉCHARGER MON ATTESTATION (PDF)
+                </button>
+            </div>
+            <button class="btn btn-primary" id="btn-restart" style="margin-top: 20px; background-color: #7f8c8d;">Recommencer</button>
+        </section>
+    </main>
+</div>
+
+<div id="toast" class="toast">Message</div>
+
+<script>
+    // --- DATA ---
+    const quizData = [
+        {
+            question: "Pourquoi le document stipule-t-il que les recruteurs scannent votre candidature « avec les mêmes exigences de précision qu'un audit APSAD » ?",
+            options: [
+                "Parce que dans les métiers du SSI, l'enjeu est la sécurité des vies et des biens ; l'à-peu-près n'existe pas et votre rigueur écrite reflète votre rigueur sur le terrain.",
+                "Parce que les lettres de motivation doivent obligatoirement être certifiées par le CNPP avant d'être envoyées.",
+                "Parce que le CV doit contenir le schéma de câblage complet d'une centrale incendie.",
+                "Parce que le recruteur utilise un logiciel de détection automatique de fumée sur les fichiers PDF."
+            ],
+            correct: 0,
+            explanation: "Votre candidature constitue votre première intervention technique. Un CV contenant des fautes ou des approximations prouve un défaut de rigueur documentaire, ce qui est éliminatoire lors d'un audit de conformité ou d'un processus de recrutement SSI."
+        },
+        {
+            question: "Quel élément doit obligatoirement apparaître de manière explicite dans le titre de votre CV selon la check-list de mise en service ?",
+            options: [
+                "Le sigle officiel « SSI » (ex: Technicien de maintenance et de travaux SSI).",
+                "La mention de vos prétentions salariales annuelles exactes.",
+                "La liste complète de vos anciens employeurs hors du secteur technique.",
+                "Un titre généraliste comme « Technicien polyvalent disponible immédiatement »."
+            ],
+            correct: 0,
+            explanation: "Un titre vague ou généraliste est immédiatement écarté par les recruteurs du secteur. Le terme « SSI » doit sauter aux yeux dès la première seconde pour assurer la pertinence et la conformité du profil recherché."
+        },
+        {
+            question: "Dans la rédaction d'un CV orienté sécurité incendie, comment doivent être présentées vos compétences matérielles ?",
+            options: [
+                "De manière factuelle et normée en citant explicitement les équipements (CMSI, ECS, DAS, BAAS) et les fabricants.",
+                "De manière générale en indiquant simplement « Compétences en matériel électronique ».",
+                "En décrivant uniquement les outils d'outillage manuel classiques (tournevis, pince à dénuder).",
+                "En affirmant que vous pouvez réparer n'importe quelle marque sans formation préalable."
+            ],
+            correct: 0,
+            explanation: "Les recruteurs n'achètent pas des promesses déclaratives mais de la conformité. Préciser le matériel (Centrale de Mise en Sécurité Incendie, Équipement de Contrôle et de Signalisation, Dispositif d'Actionnement de Sécurité) valide immédiatement votre opérationnalité."
+        },
+        {
+            question: "Qu'est-ce que « la règle des trois preuves » recommandée pour étayer vos savoir-faire techniques ?",
+            options: [
+                "Sélectionner au maximum 3 preuves très concrètes et vérifiables (ex: un test fonctionnel réussi, une installation normée, un diagnostic de panne en atelier).",
+                "Fournir au moins 3 lettres de recommandation d'anciens collègues de travail hors sécurité.",
+                "Envoyer son dossier de candidature en 3 exemplaires séparés par e-mail.",
+                "Avoir commis moins de 3 fautes d'orthographe sur l'ensemble de son dossier de candidature."
+            ],
+            correct: 0,
+            explanation: "Le guide tactique conseille d'éviter l'inventaire à la Prévert. Choisir 3 réalisations concrètes et techniques (par exemple issues des ateliers du Titre Professionnel) permet de donner un maximum de poids et de crédibilité à votre discours."
+        },
+        {
+            question: "Quel protocole réglementaire doit être valorisé sur votre CV pour prouver que vous connaissez le cadre d'intervention en ERP ou IGH ?",
+            options: [
+                "La mention explicite de la maîtrise des normes incontournables comme la norme NF S 61-933 ou la règle APSAD R7.",
+                "L'affirmation que vous possédez une assurance responsabilité civile personnelle.",
+                "La description de votre méthode personnelle de contournement des alarmes intempestives.",
+                "La copie conforme du règlement de sécurité intérieur du centre de formation."
+            ],
+            correct: 0,
+            explanation: "Un technicien SSI n'intervient jamais hors cadre. Afficher la connaissance des normes (NF S 61-933 pour la maintenance, APSAD R7 pour la détection) indique au recruteur que vous respectez le cadre légal strict du secteur."
+        },
+        {
+            question: "Dans le modèle d'e-mail de transmission d'une candidature, quelle structure doit être respectée pour garantir l'impact ?",
+            options: [
+                "Un message court, poli et formel, indiquant le statut (titulaire du TP), les hard skills clés (maintenance préventive, tests fonctionnels) et les normes maîtrisées.",
+                "Un long résumé de sa vie personnelle et de ses motivations profondes non techniques.",
+                "Un mail sans objet ni texte, contenant uniquement les fichiers en pièces jointes sans formule de politesse.",
+                "La réécriture complète de son CV directement dans le corps de l'e-mail."
+            ],
+            correct: 0,
+            explanation: "L'e-mail professionnel est la preuve directe de votre respect des procédures et de votre rigueur de communication. Il doit être concis, exempt de fautes, et mettre en valeur vos habilitations et vos compétences réglementaires."
+        },
+        {
+            question: "Qu'est-ce que « la posture de l'inspecteur » ou « posture sécuritaire » attendue chez le candidat lors de ses échanges ?",
+            options: [
+                "Une communication factuelle et neutre avec le client, basée uniquement sur des relevés techniques et des faits, sans interprétation personnelle.",
+                "Le fait de donner des avis personnels et subjectifs sur la qualité du matériel installé chez le client.",
+                "Une attitude autoritaire consistant à réprimander le client en cas de non-conformité constatée.",
+                "Le refus de communiquer avec les responsables de site ou la hiérarchie en cas d'incident."
+            ],
+            correct: 0,
+            explanation: "La rigueur documentaire et comportementale du technicien impose une neutralité absolue. Vos rapports et vos paroles doivent refléter des faits précis et mesurables, garantissant la traçabilité légale de vos interventions."
+        },
+        {
+            question: "Où doivent être positionnées vos habilitations (SST, Habilitations Électriques) sur votre CV pour maximiser leur efficacité ?",
+            options: [
+                "Elles doivent sauter aux yeux immédiatement dès la première lecture (généralement en haut ou dans un encadré dédié).",
+                "Elles doivent être écrites en petits caractères en note de bas de page.",
+                "Il ne faut pas les mentionner et attendre que le recruteur pose la question en entretien.",
+                "Elles doivent figurer uniquement dans le nom du fichier PDF joint."
+            ],
+            correct: 0,
+            explanation: "Les habilitations électriques (H0V, B1V, B2V, BC, BR) et de secourisme (SST) sont des prérequis d'accès obligatoires sur les chantiers et sites clients. Les rendre immédiatement visibles valide la conformité réglementaire immédiate de votre profil."
+        },
+        {
+            question: "Quelle formulation de CV traduit au mieux une compétence technique réelle selon les principes de valorisation enseignés ?",
+            options: [
+                "« Réalisation de tests fonctionnels et maintenance préventive sur ECS et CMSI selon la norme NF S 61-933 ».",
+                "« Habitué à manipuler des alarmes incendie de toutes sortes ».",
+                "« Passionné par la détection des incendies et le sauvetage des bâtiments ».",
+                "« Maintenance de systèmes divers sans jamais avoir besoin de lire les notices techniques »."
+            ],
+            correct: 0,
+            explanation: "Les expressions vagues (« habitué à », « manipuler ») doivent être remplacées par des verbes d'action factuels associés à des acronymes réglementaires du secteur. Cela démontre votre maîtrise et votre culture métier."
+        },
+        {
+            question: "Selon les conclusions du cours, à quel moment précis considère-t-on qu'une mission de maintenance SSI est réellement terminée ?",
+            options: [
+                "Uniquement lorsque le rapport d'intervention est complet, lisible, signé et 100% conforme aux attentes légales (rigueur documentaire).",
+                "Dès que les outils sont rangés dans le véhicule de service.",
+                "Lorsque la centrale incendie ne bipe plus, même si le rapport n'est pas rédigé.",
+                "Dès que l'heure de fin de contrat de la journée est atteinte."
+            ],
+            correct: 0,
+            explanation: "Dans le secteur ultra-réglementé du SSI, la traçabilité fait foi de conformité. Un travail technique parfait sans rapport écrit conforme est une faute professionnelle car il empêche la validation réglementaire de l'installation."
+        }
+    ];
+
+    // --- STATE ---
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let userName = "";
+    let isAnswered = false;
+    let currentCorrectIndex = 0;
+
+    // --- DOM ---
+    const screens = { intro: document.getElementById('screen-intro'), quiz: document.getElementById('screen-quiz'), result: document.getElementById('screen-result') };
+    const ui = {
+        usernameInput: document.getElementById('username'), btnStart: document.getElementById('btn-start'), questionText: document.getElementById('question-text'),
+        optionsContainer: document.getElementById('options-container'), currentQNum: document.getElementById('current-q-num'), totalQNum: document.getElementById('total-q-num'),
+        progressBar: document.getElementById('progress-bar'), explanationBox: document.getElementById('explanation-box'), explanationText: document.getElementById('explanation-text'),
+        btnNext: document.getElementById('btn-next'), finalScore: document.getElementById('final-score'), scoreMessage: document.getElementById('score-message'),
+        btnDownload: document.getElementById('btn-download'), btnRestart: document.getElementById('btn-restart'), toast: document.getElementById('toast')
+    };
+
+    // --- UTILS ---
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+    function switchScreen(name) {
+        Object.values(screens).forEach(s => s.classList.remove('active'));
+        screens[name].classList.add('active');
+    }
+
+    function showToast(msg) {
+        ui.toast.textContent = msg; ui.toast.classList.add('show');
+        setTimeout(() => ui.toast.classList.remove('show'), 3000);
+    }
+
+    // --- LOGIC ---
+    ui.totalQNum.textContent = quizData.length;
+
+    ui.btnStart.addEventListener('click', () => {
+        const name = ui.usernameInput.value.trim();
+        if (name.length < 2) return showToast("Veuillez entrer un nom valide.");
+        userName = name;
+        switchScreen('quiz');
+        loadQuestion();
+    });
+
+    function loadQuestion() {
+        isAnswered = false;
+        const data = quizData[currentQuestionIndex];
+        let currentOptions = shuffleArray([...data.options]);
+        currentCorrectIndex = currentOptions.indexOf(data.options[data.correct]);
+        
+        ui.currentQNum.textContent = currentQuestionIndex + 1;
+        ui.progressBar.style.width = `${(currentQuestionIndex / quizData.length) * 100}%`;
+        ui.questionText.textContent = data.question;
+        ui.explanationBox.style.display = 'none';
+        ui.btnNext.style.display = 'none';
+        
+        ui.optionsContainer.innerHTML = '';
+        currentOptions.forEach((opt, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerHTML = `<span class="option-label">${String.fromCharCode(65 + i)})</span> ${opt}`;
+            btn.addEventListener('click', () => handleAnswer(i, btn));
+            ui.optionsContainer.appendChild(btn);
+        });
+    }
+
+    function handleAnswer(selectedIndex, btn) {
+        if (isAnswered) return;
+        isAnswered = true;
+        const buttons = ui.optionsContainer.querySelectorAll('.option-btn');
+        
+        if (selectedIndex === currentCorrectIndex) { btn.classList.add('correct'); score++; showToast("Bonne réponse !"); }
+        else { btn.classList.add('wrong'); buttons[currentCorrectIndex].classList.add('correct'); showToast("Mauvaise réponse..."); }
+
+        buttons.forEach(b => b.disabled = true);
+        ui.explanationText.textContent = quizData[currentQuestionIndex].explanation;
+        ui.explanationBox.style.display = 'block';
+        ui.btnNext.style.display = 'inline-block';
+    }
+
+    ui.btnNext.addEventListener('click', () => {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < quizData.length) loadQuestion();
+        else showResults();
+    });
+
+    function showResults() {
+        switchScreen('result');
+        ui.finalScore.textContent = score;
+        ui.progressBar.style.width = '100%';
+        let msg = score === 10 ? "Excellent ! Votre candidature est parfaitement normée." : score >= 8 ? "Très bon niveau. Logique de conformité comprise." : score >= 5 ? "Résultat moyen. Quelques ajustements nécessaires." : "Insuffisant. Relisez attentivement les règles de conformité.";
+        ui.scoreMessage.textContent = msg;
+    }
+
+    // --- PDF DIRECT DRAWING ---
+    ui.btnDownload.addEventListener('click', () => {
+        if (!window.jspdf) return alert("Erreur de chargement PDF.");
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+        const timeStr = new Date().toLocaleTimeString('fr-FR');
+
+        doc.setFontSize(22); doc.setTextColor(52, 73, 94);
+        doc.text("ATTESTATION DE RÉALISATION", 105, 20, { align: "center" });
+
+        doc.setFontSize(14); doc.setTextColor(60, 60, 60);
+        doc.text("Thème : Optimiser Sa Candidature SSI Conforme", 105, 30, { align: "center" });
+
+        doc.setDrawColor(200, 200, 200); doc.line(20, 40, 190, 40);
+
+        doc.setFontSize(12); doc.setTextColor(0, 0, 0);
+        doc.text(`Nom du stagiaire : ${userName.toUpperCase()}`, 20, 60);
+        doc.text(`Date de réalisation : ${dateStr} à ${timeStr}`, 20, 70);
+
+        doc.setDrawColor(52, 73, 94); doc.setFillColor(240, 247, 255);
+        doc.rect(20, 90, 170, 40, 'FD');
+
+        doc.setFontSize(12); doc.setTextColor(100, 100, 100);
+        doc.text("RÉSULTAT AU QUIZ", 105, 105, { align: "center" });
+
+        doc.setFontSize(32); doc.setTextColor(52, 73, 94);
+        doc.text(`${score} / 10`, 105, 130, { align: "center" });
+
+        doc.setFontSize(10); doc.setTextColor(150, 150, 150);
+        doc.text("Document généré automatiquement via la plateforme de formation.", 105, 280, { align: "center" });
+
+        try { doc.save(`Attestation_Candidature_SSI_${userName.replace(/\s+/g, '_')}.pdf`); showToast("PDF téléchargé !"); }
+        catch (e) { console.error(e); alert("Erreur lors du téléchargement."); }
+    });
+
+    ui.btnRestart.addEventListener('click', () => { currentQuestionIndex = 0; score = 0; switchScreen('intro'); });
+</script>
+</body>
+</html>
